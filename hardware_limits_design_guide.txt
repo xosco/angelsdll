@@ -1,0 +1,584 @@
+КАК БЫЛ СОЗДАН ДИЗАЙН БЛОКА “HARDWARE LIMITS YOU. SOFTWARE LIBERATES YOU.”
+
+Файл сайта: index.html
+Блок: footer-cta
+Стиль: solid dark / noir / graphite / premium grain
+
+============================================================
+1. ГЛАВНАЯ ИДЕЯ ДИЗАЙНА
+============================================================
+
+Блок “hardware limits you. software liberates you.” выглядит красиво не из-за одного эффекта, а из-за сочетания нескольких приёмов:
+
+1) тёмная солидная база;
+2) мягкий приглушённый акцент, а не кислотный цвет;
+3) глубокая тень вокруг карточки;
+4) внутренний свет сверху;
+5) шумовая текстура;
+6) декоративная сетка справа снизу;
+7) крупная типографика;
+8) хороший контраст между текстом, фоном и кнопкой;
+9) большой border-radius;
+10) много воздуха внутри блока.
+
+То есть блок сделан не как обычная яркая карточка, а как дорогая промо-панель: тёмная, матовая, с аккуратным свечением и текстурой.
+
+============================================================
+2. HTML-СТРУКТУРА БЛОКА
+============================================================
+
+В HTML блок устроен очень просто:
+
+<footer class="footer">
+  <div class="shell">
+    <div class="footer-cta">
+      <div>
+        <h2>hardware limits you. software liberates you.</h2>
+        <p>the strongest visual block is now the direction for the whole website: dark, premium, textured and focused.</p>
+      </div>
+      <button class="btn light" type="button" id="footerBookBtn">get instant access</button>
+    </div>
+  </div>
+</footer>
+
+Главная карточка — это .footer-cta.
+Внутри неё две колонки:
+
+1) слева заголовок и описание;
+2) справа кнопка.
+
+На десктопе это выглядит как широкая премиальная панель.
+На мобильных устройствах блок перестраивается в одну колонку.
+
+============================================================
+3. ГЛАВНЫЙ CSS БЛОКА
+============================================================
+
+Ключевой CSS:
+
+.footer-cta {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) auto;
+  align-items: center;
+  gap: 28px;
+  padding: clamp(30px, 6vw, 58px);
+  border-radius: 38px;
+  border: 1px solid rgba(185,192,143,.18);
+  background:
+    radial-gradient(circle at 84% 26%, rgba(185,192,143,.16), transparent 20%),
+    radial-gradient(circle at 16% 0%, rgba(255,255,255,.055), transparent 36%),
+    linear-gradient(145deg, #11150e 0%, #090b0d 46%, #050607 100%);
+  box-shadow: 0 36px 120px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.065);
+}
+
+Почему это работает:
+
+- display: grid создаёт аккуратную двухколоночную композицию.
+- padding: clamp(30px, 6vw, 58px) даёт адаптивные внутренние отступы.
+- border-radius: 38px делает блок мягким и дорогим.
+- border с rgba(185,192,143,.18) даёт тонкую оливковую рамку.
+- background состоит из трёх слоёв:
+  1) radial-gradient справа сверху — мягкое оливковое свечение;
+  2) radial-gradient слева сверху — лёгкий белый свет;
+  3) linear-gradient — основная тёмная база.
+- box-shadow создаёт большую глубокую тень.
+- inset shadow добавляет внутренний верхний блик.
+
+============================================================
+4. ПАЛИТРА
+============================================================
+
+Цвета специально не кислотные.
+Они приглушённые, тёмные, почти графитовые.
+
+Основные цвета:
+
+Фон страницы:
+#050607
+
+Тёмная база блока:
+#11150e
+#090b0d
+#050607
+
+Текст:
+#f0eee6
+
+Вторичный текст:
+rgba(243,241,232,.58)
+
+Акцент:
+#b9c08f
+rgba(185,192,143,.16)
+
+Идея палитры:
+
+Не использовать яркий lime / neon green.
+Вместо него использовать muted olive — приглушённый оливково-серый цвет.
+Он создаёт ощущение технологичности, но не выглядит дёшево или кислотно.
+
+============================================================
+5. МНОГОСЛОЙНЫЙ ФОН
+============================================================
+
+Главный визуальный эффект блока — фон из нескольких слоёв.
+
+background:
+  radial-gradient(circle at 84% 26%, rgba(185,192,143,.16), transparent 20%),
+  radial-gradient(circle at 16% 0%, rgba(255,255,255,.055), transparent 36%),
+  linear-gradient(145deg, #11150e 0%, #090b0d 46%, #050607 100%);
+
+Слой 1:
+radial-gradient(circle at 84% 26%, rgba(185,192,143,.16), transparent 20%)
+
+Это мягкое оливковое свечение справа сверху.
+Оно делает блок живым, но не слишком ярким.
+
+Слой 2:
+radial-gradient(circle at 16% 0%, rgba(255,255,255,.055), transparent 36%)
+
+Это лёгкий холодный свет слева сверху.
+Он добавляет объём.
+
+Слой 3:
+linear-gradient(145deg, #11150e 0%, #090b0d 46%, #050607 100%)
+
+Это основа блока.
+Градиент очень тёмный и почти незаметный, но он не даёт панели выглядеть плоской.
+
+============================================================
+6. ТЕНЬ И ОБЪЁМ
+============================================================
+
+box-shadow:
+  0 36px 120px rgba(0,0,0,.58),
+  inset 0 1px 0 rgba(255,255,255,.065);
+
+Первая тень:
+0 36px 120px rgba(0,0,0,.58)
+
+Она большая, мягкая и глубокая.
+Создаёт ощущение, что блок лежит выше фона.
+
+Вторая тень:
+inset 0 1px 0 rgba(255,255,255,.065)
+
+Это внутренний верхний блик.
+Он делает панель похожей на дорогой glass/matte элемент.
+
+Важно:
+Тень не должна быть маленькой и резкой.
+У премиального dark UI тени обычно большие, мягкие и почти растворённые.
+
+============================================================
+7. РАМКА
+============================================================
+
+border: 1px solid rgba(185,192,143,.18);
+
+Рамка очень тонкая и полупрозрачная.
+Она не кричит, но аккуратно отделяет блок от фона.
+Цвет рамки совпадает с muted olive акцентом.
+
+Это важно: если рамка будет белой или ярко-зелёной, блок потеряет дорогой вид.
+
+============================================================
+8. ШУМ / GRAIN TEXTURE
+============================================================
+
+У блока есть псевдоэлемент .footer-cta:before, который накладывает шум:
+
+.footer-cta:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .12;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,...");
+}
+
+Что делает шум:
+
+- убирает пластиковую гладкость;
+- добавляет кинематографичность;
+- делает тёмную поверхность более дорогой;
+- помогает градиентам выглядеть натуральнее;
+- создаёт эффект matte/noir.
+
+Шум сделан через встроенный SVG feTurbulence.
+Это удобно, потому что не нужны внешние изображения.
+
+Принцип:
+
+1) создать SVG noise через feTurbulence;
+2) вставить его как data:image/svg+xml;
+3) поставить маленькую opacity;
+4) использовать mix-blend-mode: overlay.
+
+============================================================
+9. ДЕКОРАТИВНАЯ СЕТКА СПРАВА СНИЗУ
+============================================================
+
+У блока есть ещё один декоративный слой — .footer-cta:after:
+
+.footer-cta:after {
+  content: "";
+  position: absolute;
+  right: -90px;
+  bottom: -150px;
+  width: 430px;
+  height: 430px;
+  border-radius: 50%;
+  opacity: .58;
+  background:
+    linear-gradient(90deg, rgba(185,192,143,.18) 1px, transparent 1px),
+    linear-gradient(rgba(185,192,143,.14) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(circle, #000 0 52%, transparent 74%);
+  -webkit-mask-image: radial-gradient(circle, #000 0 52%, transparent 74%);
+  transform: rotate(-13deg);
+  pointer-events: none;
+}
+
+Что это даёт:
+
+- появляется технический декоративный объект;
+- блок становится более запоминающимся;
+- справа снизу появляется визуальный баланс;
+- сетка выглядит как часть интерфейса/системы;
+- маска превращает прямоугольную сетку в мягкий круг.
+
+Важно:
+Сетка не занимает центр внимания.
+Она находится сбоку и частично выходит за пределы блока.
+Именно поэтому она выглядит дорого, а не навязчиво.
+
+============================================================
+10. TYPOGRAPHY / ЗАГОЛОВОК
+============================================================
+
+CSS заголовка:
+
+.footer-cta h2 {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  font-size: clamp(2rem, 5vw, 4.35rem);
+  line-height: .94;
+  letter-spacing: -.075em;
+  font-weight: 1000;
+}
+
+Почему заголовок выглядит сильно:
+
+- очень большой размер;
+- плотный font-weight;
+- отрицательный letter-spacing;
+- короткая фраза;
+- низкий line-height;
+- текст занимает много пространства и становится главным объектом.
+
+Фраза “hardware limits you. software liberates you.” работает сама по себе, потому что она контрастная:
+
+hardware limits you — ограничение;
+software liberates you — освобождение.
+
+Это выглядит как слоган, а не просто текст.
+
+============================================================
+11. ОПИСАНИЕ ПОД ЗАГОЛОВКОМ
+============================================================
+
+.footer-cta p {
+  position: relative;
+  z-index: 1;
+  max-width: 570px;
+  margin-top: 16px;
+  color: rgba(243,241,232,.58);
+  line-height: 1.65;
+  font-weight: 700;
+}
+
+Описание сделано второстепенным:
+
+- цвет сильно приглушён;
+- текст не конкурирует с заголовком;
+- line-height высокий, чтобы читалось спокойно;
+- max-width ограничивает длину строки.
+
+============================================================
+12. КНОПКА
+============================================================
+
+Кнопка справа использует класс .btn.light.
+
+.btn.light {
+  color: #080a07;
+  border-color: rgba(255,255,255,.2);
+  background: linear-gradient(180deg, #d8ddb8, #9ea86f);
+  box-shadow: 0 18px 48px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.36);
+}
+
+Почему кнопка работает:
+
+- она светлее фона, поэтому хорошо видна;
+- её цвет не кислотный, а оливково-бежевый;
+- она создаёт нужный CTA-контраст;
+- она не ломает тёмный стиль блока;
+- inset highlight делает кнопку объёмной.
+
+Если сделать кнопку ярко-зелёной, блок сразу станет менее солидным.
+
+============================================================
+13. Z-INDEX И СЛОИ
+============================================================
+
+У текста и кнопки есть position: relative и z-index: 1.
+
+Это нужно, чтобы декоративная сетка и шум не перекрывали контент.
+
+Принцип слоёв:
+
+1) основной фон блока;
+2) шум через :before;
+3) декоративная сетка через :after;
+4) текст и кнопка поверх всего.
+
+============================================================
+14. АДАПТИВНОСТЬ
+============================================================
+
+На десктопе:
+
+.footer-cta {
+  grid-template-columns: minmax(0, .9fr) auto;
+}
+
+То есть текст слева, кнопка справа.
+
+На планшете и мобильных:
+
+.footer-cta {
+  grid-template-columns: 1fr;
+}
+
+.footer-cta .btn {
+  width: fit-content;
+}
+
+На мобильном также уменьшается радиус:
+
+.footer-cta {
+  border-radius: 30px;
+}
+
+Это сохраняет премиальный вид, но делает блок удобным для маленьких экранов.
+
+============================================================
+15. ПОЧЕМУ БЛОК ВЫГЛЯДИТ “БОЖЕСТВЕННО”
+============================================================
+
+Главная причина — баланс.
+
+Блок не слишком яркий.
+Он не слишком плоский.
+Он не перегружен.
+Он не пустой.
+
+В нём есть:
+
+- сильный слоган;
+- глубокий тёмный фон;
+- мягкое свечение;
+- шумовая фактура;
+- декоративный технический паттерн;
+- премиальная кнопка;
+- большие отступы;
+- аккуратная рамка;
+- правильный контраст.
+
+Именно сумма этих решений создаёт ощущение дорогого high-end интерфейса.
+
+============================================================
+16. ТОЧНЫЙ CSS ДЛЯ ПОВТОРЕНИЯ БЛОКА
+============================================================
+
+Ниже минимальный CSS, чтобы повторить именно этот блок:
+
+.footer-cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) auto;
+  align-items: center;
+  gap: 28px;
+  padding: clamp(30px, 6vw, 58px);
+  border-radius: 38px;
+  border: 1px solid rgba(185,192,143,.18);
+  background:
+    radial-gradient(circle at 84% 26%, rgba(185,192,143,.16), transparent 20%),
+    radial-gradient(circle at 16% 0%, rgba(255,255,255,.055), transparent 36%),
+    linear-gradient(145deg, #11150e 0%, #090b0d 46%, #050607 100%);
+  box-shadow: 0 36px 120px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.065);
+}
+
+.footer-cta:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .12;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.08' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.58'/%3E%3C/svg%3E");
+}
+
+.footer-cta:after {
+  content: "";
+  position: absolute;
+  right: -90px;
+  bottom: -150px;
+  width: 430px;
+  height: 430px;
+  border-radius: 50%;
+  opacity: .58;
+  background:
+    linear-gradient(90deg, rgba(185,192,143,.18) 1px, transparent 1px),
+    linear-gradient(rgba(185,192,143,.14) 1px, transparent 1px);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(circle, #000 0 52%, transparent 74%);
+  -webkit-mask-image: radial-gradient(circle, #000 0 52%, transparent 74%);
+  transform: rotate(-13deg);
+  pointer-events: none;
+}
+
+.footer-cta h2 {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  font-size: clamp(2rem, 5vw, 4.35rem);
+  line-height: .94;
+  letter-spacing: -.075em;
+  font-weight: 1000;
+  color: #f0eee6;
+}
+
+.footer-cta p {
+  position: relative;
+  z-index: 1;
+  max-width: 570px;
+  margin-top: 16px;
+  color: rgba(243,241,232,.58);
+  line-height: 1.65;
+  font-weight: 700;
+}
+
+.footer-cta .btn {
+  position: relative;
+  z-index: 1;
+}
+
+.btn.light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.2);
+  color: #080a07;
+  background: linear-gradient(180deg, #d8ddb8, #9ea86f);
+  box-shadow: 0 18px 48px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.36);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .footer-cta {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-cta .btn {
+    width: fit-content;
+  }
+}
+
+@media (max-width: 640px) {
+  .footer-cta {
+    border-radius: 30px;
+  }
+}
+
+============================================================
+17. ПРОМПТ ДЛЯ ИИ АГЕНТА, ЧТОБЫ ОН ПОВТОРИЛ ТОЧЬ-В-ТОЧЬ
+============================================================
+
+Скопируй этот промпт и отправь ИИ агенту:
+
+------------------------------------------------------------
+
+Сделай для моего сайта премиальный CTA-блок в стиле solid dark / noir / graphite, точно в духе блока “hardware limits you. software liberates you.”
+
+Требования к дизайну:
+
+1. Блок должен быть тёмным, дорогим, матовым, без кислотных цветов.
+2. Основная палитра:
+   - фон блока: #11150e, #090b0d, #050607;
+   - основной текст: #f0eee6;
+   - вторичный текст: rgba(243,241,232,.58);
+   - акцент: muted olive #b9c08f / rgba(185,192,143,.16).
+3. Сделай большой border-radius около 38px.
+4. Добавь тонкую рамку: 1px solid rgba(185,192,143,.18).
+5. Сделай фон из трёх слоёв:
+   - radial-gradient справа сверху с rgba(185,192,143,.16);
+   - radial-gradient слева сверху с rgba(255,255,255,.055);
+   - linear-gradient(145deg, #11150e 0%, #090b0d 46%, #050607 100%).
+6. Добавь глубокую тень:
+   box-shadow: 0 36px 120px rgba(0,0,0,.58), inset 0 1px 0 rgba(255,255,255,.065).
+7. Через :before добавь шумовую текстуру grain/noise на основе SVG feTurbulence, opacity около .12, mix-blend-mode: overlay.
+8. Через :after добавь декоративную круглую сетку справа снизу:
+   - width/height около 430px;
+   - right: -90px;
+   - bottom: -150px;
+   - background из двух linear-gradient линий;
+   - background-size: 18px 18px;
+   - mask-image: radial-gradient(circle, #000 0 52%, transparent 74%);
+   - transform: rotate(-13deg);
+   - opacity около .58.
+9. Внутри блока сделай layout через CSS grid:
+   grid-template-columns: minmax(0, .9fr) auto;
+   слева заголовок и описание, справа кнопка.
+10. Заголовок должен быть очень крупный:
+    font-size: clamp(2rem, 5vw, 4.35rem);
+    line-height: .94;
+    letter-spacing: -.075em;
+    font-weight: 1000.
+11. Текст заголовка: “hardware limits you. software liberates you.”
+12. Описание сделать приглушённым, max-width 570px, line-height 1.65.
+13. Кнопку сделать светлой, но не кислотной:
+    background: linear-gradient(180deg, #d8ddb8, #9ea86f);
+    color: #080a07;
+    border-radius: 999px;
+    box-shadow: 0 18px 48px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.36).
+14. Весь контент должен быть выше декоративных слоёв через position: relative и z-index: 1.
+15. На мобильных устройствах блок должен переходить в одну колонку.
+16. Итог должен выглядеть не как яркий cyberpunk, а как дорогая тёмная промо-панель: matte, solid, grain, subtle glow, premium.
+
+Используй следующий HTML:
+
+<div class="footer-cta">
+  <div>
+    <h2>hardware limits you. software liberates you.</h2>
+    <p>the strongest visual block is now the direction for the whole website: dark, premium, textured and focused.</p>
+  </div>
+  <button class="btn light" type="button">get instant access</button>
+</div>
+
+И напиши полный CSS для этого блока, включая :before, :after, адаптив и кнопку.
+
+------------------------------------------------------------
+
+КОНЕЦ ФАЙЛА
