@@ -1,0 +1,131 @@
+-- ==============================================================================
+-- BLADE BALL: ALLUSIVE / UWU METHOD CLASH & SLASHES OF FURY DESTROYER
+-- Переключатель: Клавиша 'E' (Toggle)
+-- ==============================================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Stats = game:GetService("Stats")
+local StarterGui = game:GetService("StarterGui")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Balls = workspace:WaitForChild("Balls", 9e9)
+
+-- ==================== НАСТРОЙКИ ALLUSIVE ====================
+local TOGGLE_KEY = Enum.KeyCode.E        -- Клавиша переключения
+local CLASH_BURST_CLICKS = 12            -- Количество микро-ударов за тик
+local CLASH_DISTANCE_THRESHOLD = 25      -- Радиус активации режима Clash
+-- ============================================================
+
+local isEnabled = false
+local blockButton = nil
+
+-- Поиск кнопки интерфейса
+local function updateButton()
+    pcall(function()
+        local hotbar = PlayerGui:FindFirstChild("Hotbar")
+        if hotbar then
+            blockButton = hotbar:FindFirstChild("Block") or hotbar:FindFirstChild("Parry")
+        end
+    end)
+end
+updateButton()
+PlayerGui.ChildAdded:Connect(function() task.wait(0.1) updateButton() end)
+
+-- Определение реального рабочего мяча на арене
+local function getRealBall()
+    for _, ball in ipairs(Balls:GetChildren()) do
+        if ball:GetAttribute("realBall") == true or ball:FindFirstChild("zoomies") then
+            return ball
+        end
+    end
+    return Balls:FindFirstChildWhichIsA("BasePart")
+end
+
+-- Аппаратный клик (High-Frequency Invoker)
+local function rawInstantClick()
+    -- 1. Системные C-функции мыши
+    if mouse1click then
+        mouse1click()
+    elseif mouse1press and mouse1release then
+        mouse1press()
+        mouse1release()
+    end
+
+    -- 2. Мгновенный сигнал UI без детекта
+    if blockButton then
+        if firesignal then
+            firesignal(blockButton.Activated)
+        elseif getconnections then
+            for _, conn in pairs(getconnections(blockButton.Activated)) do
+                if conn.Fire then conn:Fire() elseif conn.Function then conn.Function() end
+            end
+        end
+    end
+end
+
+-- Основной цикл высокой частоты (RenderStepped синхронизирован с частотой кадров)
+local activeConnection = nil
+
+local function startSpamLoop()
+    if activeConnection then activeConnection:Disconnect() end
+
+    activeConnection = RunService.RenderStepped:Connect(function()
+        if not isEnabled then return end
+
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local ball = getRealBall()
+
+        -- Проверка на Clash / Slashes of Fury
+        local burstCount = 3
+        if hrp and ball then
+            local dist = (hrp.Position - ball.Position).Magnitude
+            local ballSpeed = ball.Velocity.Magnitude
+
+            -- Если мяч рядом (Clash) или остановлен способностью (Slashes of Fury)
+            if dist <= CLASH_DISTANCE_THRESHOLD or ballSpeed < 5 then
+                burstCount = CLASH_BURST_CLICKS -- Врубаем максимальный буст ударов
+            end
+        end
+
+        -- Мгновенная пачка кликов
+        for _ = 1, burstCount do
+            rawInstantClick()
+        end
+    end)
+end
+
+-- Уведомление
+local function showNotify(state)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "Allusive / UwU Method",
+            Text = state and "🟢 Ultra Spam: ВКЛЮЧЕН" or "🔴 Ultra Spam: ВЫКЛЮЧЕН",
+            Duration = 1.2
+        })
+    end)
+end
+
+-- Переключатель на кнопку
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+
+    if input.KeyCode == TOGGLE_KEY then
+        isEnabled = not isEnabled
+        showNotify(isEnabled)
+
+        if isEnabled then
+            startSpamLoop()
+        else
+            if activeConnection then
+                activeConnection:Disconnect()
+                activeConnection = nil
+            end
+        end
+    end
+end)
+
+print("[Allusive Engine] Модуль быстрого парирования и клэша успешно загружен!")
