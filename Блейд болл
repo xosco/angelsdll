@@ -27,6 +27,7 @@ local spamConnection = nil
 local autoParryEnabled = true
 local spamEnabled = false
 local sphereVisible = true
+local abilityESPEnabled = false
 
 local sphere = Instance.new("SphereHandleAdornment")
 sphere.Radius = 15
@@ -47,8 +48,8 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = localPlayer.PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 180, 0, 112)
-frame.Position = UDim2.new(0.5, -90, 0, 20)
+frame.Size = UDim2.new(0, 190, 0, 134)
+frame.Position = UDim2.new(0.5, -95, 0, 20)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
@@ -72,8 +73,8 @@ title.TextSize = 14
 title.Parent = frame
 
 local autoLabel = Instance.new("TextLabel")
-autoLabel.Size = UDim2.new(1, -10, 0, 22)
-autoLabel.Position = UDim2.new(0, 5, 0, 28)
+autoLabel.Size = UDim2.new(1, -10, 0, 20)
+autoLabel.Position = UDim2.new(0, 5, 0, 26)
 autoLabel.BackgroundTransparency = 1
 autoLabel.Text = "Auto Parry [V]: ON"
 autoLabel.TextColor3 = Color3.fromRGB(80, 255, 80)
@@ -83,8 +84,8 @@ autoLabel.TextXAlignment = Enum.TextXAlignment.Left
 autoLabel.Parent = frame
 
 local spamLabel = Instance.new("TextLabel")
-spamLabel.Size = UDim2.new(1, -10, 0, 22)
-spamLabel.Position = UDim2.new(0, 5, 0, 50)
+spamLabel.Size = UDim2.new(1, -10, 0, 20)
+spamLabel.Position = UDim2.new(0, 5, 0, 46)
 spamLabel.BackgroundTransparency = 1
 spamLabel.Text = "Spam [E]: OFF"
 spamLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
@@ -94,8 +95,8 @@ spamLabel.TextXAlignment = Enum.TextXAlignment.Left
 spamLabel.Parent = frame
 
 local sphereLabel = Instance.new("TextLabel")
-sphereLabel.Size = UDim2.new(1, -10, 0, 22)
-sphereLabel.Position = UDim2.new(0, 5, 0, 72)
+sphereLabel.Size = UDim2.new(1, -10, 0, 20)
+sphereLabel.Position = UDim2.new(0, 5, 0, 66)
 sphereLabel.BackgroundTransparency = 1
 sphereLabel.Text = "Visual [P]: ON"
 sphereLabel.TextColor3 = Color3.fromRGB(80, 255, 80)
@@ -103,6 +104,17 @@ sphereLabel.Font = Enum.Font.Gotham
 sphereLabel.TextSize = 13
 sphereLabel.TextXAlignment = Enum.TextXAlignment.Left
 sphereLabel.Parent = frame
+
+local espLabel = Instance.new("TextLabel")
+espLabel.Size = UDim2.new(1, -10, 0, 20)
+espLabel.Position = UDim2.new(0, 5, 0, 86)
+espLabel.BackgroundTransparency = 1
+espLabel.Text = "Ability ESP [C]: OFF"
+espLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+espLabel.Font = Enum.Font.Gotham
+espLabel.TextSize = 13
+espLabel.TextXAlignment = Enum.TextXAlignment.Left
+espLabel.Parent = frame
 
 local function updateGui()
     if autoParryEnabled then
@@ -127,6 +139,14 @@ local function updateGui()
     else
         sphereLabel.Text = "Visual [P]: OFF"
         sphereLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+    end
+
+    if abilityESPEnabled then
+        espLabel.Text = "Ability ESP [C]: ON"
+        espLabel.TextColor3 = Color3.fromRGB(80, 255, 80)
+    else
+        espLabel.Text = "Ability ESP [C]: OFF"
+        espLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
     end
 end
 
@@ -183,6 +203,19 @@ local function toggleSphere()
     updateGui()
 end
 
+local function toggleAbilityESP()
+    abilityESPEnabled = not abilityESPEnabled
+    if not abilityESPEnabled then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("Head") then
+                local tag = p.Character.Head:FindFirstChild("AbilityTag")
+                if tag then tag:Destroy() end
+            end
+        end
+    end
+    updateGui()
+end
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.V then
@@ -191,6 +224,67 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         toggleSpam()
     elseif input.KeyCode == Enum.KeyCode.P then
         toggleSphere()
+    elseif input.KeyCode == Enum.KeyCode.C then
+        toggleAbilityESP()
+    end
+end)
+
+-- ==================== ABILITY ESP ====================
+local function FetchAbility(p)
+    local a = p:GetAttribute("Ability") or p:GetAttribute("EquippedAbility") or p:GetAttribute("SelectedAbility")
+    if not a then
+        local l = p:FindFirstChild("leaderstats")
+        if l and l:FindFirstChild("Ability") then
+            a = l.Ability.Value
+        end
+    end
+    return (a and tostring(a) ~= "") and tostring(a) or "???"
+end
+
+task.spawn(function()
+    while true do
+        if abilityESPEnabled then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= localPlayer and p.Character and p.Character:FindFirstChild("Head") then
+                    local head = p.Character.Head
+                    local tag = head:FindFirstChild("AbilityTag")
+                    if not tag then
+                        tag = Instance.new("BillboardGui")
+                        tag.Name = "AbilityTag"
+                        tag.Size = UDim2.new(0, 120, 0, 30)
+                        tag.StudsOffset = Vector3.new(0, 3, 0)
+                        tag.AlwaysOnTop = true
+                        tag.Parent = head
+
+                        local label = Instance.new("TextLabel")
+                        label.Name = "AbilityLabel"
+                        label.Size = UDim2.new(1, 0, 1, 0)
+                        label.BackgroundTransparency = 1
+                        label.Font = Enum.Font.SourceSansBold
+                        label.TextSize = 20
+                        label.TextStrokeTransparency = 0
+                        label.TextColor3 = Color3.fromRGB(255, 255, 100)
+                        label.Parent = tag
+                    end
+                    local label = tag:FindFirstChild("AbilityLabel")
+                    if label then
+                        label.Text = FetchAbility(p)
+                        label.Visible = true
+                    end
+                end
+            end
+        else
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("Head") then
+                    local tag = p.Character.Head:FindFirstChild("AbilityTag")
+                    if tag then
+                        local label = tag:FindFirstChild("AbilityLabel")
+                        if label then label.Visible = false end
+                    end
+                end
+            end
+        end
+        task.wait(1)
     end
 end)
 
@@ -286,4 +380,4 @@ RunService.Heartbeat:Connect(function()
 end)
 
 updateGui()
-print("[Auto Parry] Loaded | V = Auto Parry | E = Spam | P = Visual")
+print("[Auto Parry] Loaded | V = Auto Parry | E = Spam | P = Visual | C = Ability ESP")
