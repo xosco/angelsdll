@@ -52,6 +52,7 @@ frame.Size = UDim2.new(0, 190, 0, 134)
 frame.Position = UDim2.new(0.5, -95, 0, 20)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
+frame.Active = true          -- обязательно для нормального перетаскивания
 frame.Parent = screenGui
 
 local corner = Instance.new("UICorner")
@@ -150,28 +151,36 @@ local function updateGui()
     end
 end
 
-local function makeDraggable(f, handle)
-    handle = handle or f
-    local dragInput, dragStart, startPos
-    handle.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-            dragStart = input.Position
-            startPos = f.Position
-        end
-    end)
-    handle.InputChanged:Connect(function(input)
-        if dragInput and input == dragInput then
-            local delta = input.Position - dragStart
-            f.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input == dragInput then dragInput = nil end
-    end)
-end
+-- Улучшенное перетаскивание
+local dragging = false
+local dragStart = nil
+local startPos = nil
 
-makeDraggable(frame, frame)
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+frame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
 
 -- ==================== TOGGLES ====================
 local function toggleAutoParry()
