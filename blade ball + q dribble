@@ -1,0 +1,709 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Stats = game:GetService("Stats")
+
+-- --- НАСТРОЙКА БИНДОВ ПО УМОЛЧАНИЮ ---
+local ToggleKey = Enum.KeyCode.V
+local ResetKey = Enum.KeyCode.R
+local ESPKey = Enum.KeyCode.C
+local SpinKey = Enum.KeyCode.P
+local QParryKey = Enum.KeyCode.G          -- новый бинд
+
+local LocalPlayer = Players.LocalPlayer
+local AutoParryEnabled = false
+local Parried = false
+local LastBallInstance = nil
+local LastTarget = nil
+local PlayerHasParried = false
+local Threshold = 12
+local AbilityESPEnabled = false
+local SpinEnabled = false
+local IsSpinning = false
+local UseQParryEnabled = false            -- новая функция
+
+-- Состояния для перебинда
+local CurrentBinding = nil -- "toggle", "reset", "esp", "spin", "qparry" или nil
+
+-- --- GUI ---
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutoParryGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 280, 0, 560)
+MainFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame)
+
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 36)
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+Instance.new("UICorner", TitleBar)
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+TitleLabel.Text = "AUTO PARRY (mouse1 / Q)"
+TitleLabel.TextColor3 = Color3.new(1, 1, 1)
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.TextSize = 18
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Parent = TitleBar
+
+-- Первый удар статус
+local FirstParryStatus = Instance.new("TextLabel")
+FirstParryStatus.Size = UDim2.new(0.9, 0, 0, 24)
+FirstParryStatus.Position = UDim2.new(0.05, 0, 0, 42)
+FirstParryStatus.Text = "Первый удар: НЕ ЗАСЧИТАН"
+FirstParryStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
+FirstParryStatus.Font = Enum.Font.SourceSansBold
+FirstParryStatus.TextSize = 13
+FirstParryStatus.BackgroundTransparency = 1
+FirstParryStatus.TextXAlignment = Enum.TextXAlignment.Left
+FirstParryStatus.Parent = MainFrame
+
+-- Кнопка Auto Parry
+local ParryButton = Instance.new("TextButton")
+ParryButton.Size = UDim2.new(0.9, 0, 0, 36)
+ParryButton.Position = UDim2.new(0.05, 0, 0, 70)
+ParryButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ParryButton.Text = "Auto Parry: ВЫКЛ"
+ParryButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+ParryButton.Font = Enum.Font.SourceSansBold
+ParryButton.TextSize = 16
+ParryButton.BorderSizePixel = 0
+ParryButton.Parent = MainFrame
+Instance.new("UICorner", ParryButton)
+
+-- Статус скрипта
+local ScriptStatus = Instance.new("TextLabel")
+ScriptStatus.Size = UDim2.new(0.9, 0, 0, 18)
+ScriptStatus.Position = UDim2.new(0.05, 0, 0, 110)
+ScriptStatus.Text = "Статус: ожидание"
+ScriptStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
+ScriptStatus.Font = Enum.Font.SourceSans
+ScriptStatus.TextSize = 13
+ScriptStatus.BackgroundTransparency = 1
+ScriptStatus.TextXAlignment = Enum.TextXAlignment.Left
+ScriptStatus.Parent = MainFrame
+
+-- Подсказка
+local HintLabel = Instance.new("TextLabel")
+HintLabel.Size = UDim2.new(0.9, 0, 0, 18)
+HintLabel.Position = UDim2.new(0.05, 0, 0, 130)
+HintLabel.Text = "Кликни ЛКМ сам один раз для старта"
+HintLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+HintLabel.Font = Enum.Font.SourceSans
+HintLabel.TextSize = 12
+HintLabel.BackgroundTransparency = 1
+HintLabel.TextXAlignment = Enum.TextXAlignment.Left
+HintLabel.Parent = MainFrame
+
+-- Статус сброса
+local ResetStatus = Instance.new("TextLabel")
+ResetStatus.Size = UDim2.new(0.9, 0, 0, 18)
+ResetStatus.Position = UDim2.new(0.05, 0, 0, 150)
+ResetStatus.Text = ""
+ResetStatus.TextColor3 = Color3.fromRGB(255, 160, 0)
+ResetStatus.Font = Enum.Font.SourceSans
+ResetStatus.TextSize = 12
+ResetStatus.BackgroundTransparency = 1
+ResetStatus.TextXAlignment = Enum.TextXAlignment.Left
+ResetStatus.Parent = MainFrame
+
+-- =============================================
+-- РАЗДЕЛИТЕЛЬ: БИНДЫ
+-- =============================================
+local BindsHeader = Instance.new("TextLabel")
+BindsHeader.Size = UDim2.new(0.9, 0, 0, 20)
+BindsHeader.Position = UDim2.new(0.05, 0, 0, 175)
+BindsHeader.Text = "── БИНДЫ ──"
+BindsHeader.TextColor3 = Color3.fromRGB(100, 100, 100)
+BindsHeader.Font = Enum.Font.SourceSansBold
+BindsHeader.TextSize = 12
+BindsHeader.BackgroundTransparency = 1
+BindsHeader.Parent = MainFrame
+
+-- Бинд Toggle
+local ToggleBindButton = Instance.new("TextButton")
+ToggleBindButton.Size = UDim2.new(0.9, 0, 0, 28)
+ToggleBindButton.Position = UDim2.new(0.05, 0, 0, 198)
+ToggleBindButton.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+ToggleBindButton.Text = ""
+ToggleBindButton.TextColor3 = Color3.fromRGB(0, 180, 255)
+ToggleBindButton.Font = Enum.Font.SourceSansBold
+ToggleBindButton.TextSize = 11
+ToggleBindButton.BorderSizePixel = 0
+ToggleBindButton.Parent = MainFrame
+Instance.new("UICorner", ToggleBindButton)
+
+-- Бинд Reset
+local ResetBindButton = Instance.new("TextButton")
+ResetBindButton.Size = UDim2.new(0.9, 0, 0, 28)
+ResetBindButton.Position = UDim2.new(0.05, 0, 0, 230)
+ResetBindButton.BackgroundColor3 = Color3.fromRGB(50, 30, 30)
+ResetBindButton.Text = ""
+ResetBindButton.TextColor3 = Color3.fromRGB(255, 160, 0)
+ResetBindButton.Font = Enum.Font.SourceSansBold
+ResetBindButton.TextSize = 11
+ResetBindButton.BorderSizePixel = 0
+ResetBindButton.Parent = MainFrame
+Instance.new("UICorner", ResetBindButton)
+
+-- Бинд ESP
+local ESPBindButton = Instance.new("TextButton")
+ESPBindButton.Size = UDim2.new(0.9, 0, 0, 28)
+ESPBindButton.Position = UDim2.new(0.05, 0, 0, 262)
+ESPBindButton.BackgroundColor3 = Color3.fromRGB(40, 40, 20)
+ESPBindButton.Text = ""
+ESPBindButton.TextColor3 = Color3.fromRGB(255, 255, 100)
+ESPBindButton.Font = Enum.Font.SourceSansBold
+ESPBindButton.TextSize = 11
+ESPBindButton.BorderSizePixel = 0
+ESPBindButton.Parent = MainFrame
+Instance.new("UICorner", ESPBindButton)
+
+-- Бинд Spin
+local SpinBindButton = Instance.new("TextButton")
+SpinBindButton.Size = UDim2.new(0.9, 0, 0, 28)
+SpinBindButton.Position = UDim2.new(0.05, 0, 0, 294)
+SpinBindButton.BackgroundColor3 = Color3.fromRGB(20, 40, 50)
+SpinBindButton.Text = ""
+SpinBindButton.TextColor3 = Color3.fromRGB(0, 220, 255)
+SpinBindButton.Font = Enum.Font.SourceSansBold
+SpinBindButton.TextSize = 11
+SpinBindButton.BorderSizePixel = 0
+SpinBindButton.Parent = MainFrame
+Instance.new("UICorner", SpinBindButton)
+
+-- Бинд Q Parry (новый)
+local QParryBindButton = Instance.new("TextButton")
+QParryBindButton.Size = UDim2.new(0.9, 0, 0, 28)
+QParryBindButton.Position = UDim2.new(0.05, 0, 0, 326)
+QParryBindButton.BackgroundColor3 = Color3.fromRGB(40, 20, 50)
+QParryBindButton.Text = ""
+QParryBindButton.TextColor3 = Color3.fromRGB(200, 100, 255)
+QParryBindButton.Font = Enum.Font.SourceSansBold
+QParryBindButton.TextSize = 11
+QParryBindButton.BorderSizePixel = 0
+QParryBindButton.Parent = MainFrame
+Instance.new("UICorner", QParryBindButton)
+
+-- =============================================
+-- РАЗДЕЛИТЕЛЬ: ФУНКЦИИ
+-- =============================================
+local FuncHeader = Instance.new("TextLabel")
+FuncHeader.Size = UDim2.new(0.9, 0, 0, 20)
+FuncHeader.Position = UDim2.new(0.05, 0, 0, 362)
+FuncHeader.Text = "── ФУНКЦИИ ──"
+FuncHeader.TextColor3 = Color3.fromRGB(100, 100, 100)
+FuncHeader.Font = Enum.Font.SourceSansBold
+FuncHeader.TextSize = 12
+FuncHeader.BackgroundTransparency = 1
+FuncHeader.Parent = MainFrame
+
+-- Кнопка Ability ESP
+local AbilityESPButton = Instance.new("TextButton")
+AbilityESPButton.Size = UDim2.new(0.9, 0, 0, 34)
+AbilityESPButton.Position = UDim2.new(0.05, 0, 0, 387)
+AbilityESPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+AbilityESPButton.Text = "Ability ESP: ВЫКЛ"
+AbilityESPButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+AbilityESPButton.Font = Enum.Font.SourceSansBold
+AbilityESPButton.TextSize = 15
+AbilityESPButton.BorderSizePixel = 0
+AbilityESPButton.Parent = MainFrame
+Instance.new("UICorner", AbilityESPButton)
+
+-- Кнопка Крутилка
+local SpinButton = Instance.new("TextButton")
+SpinButton.Size = UDim2.new(0.9, 0, 0, 34)
+SpinButton.Position = UDim2.new(0.05, 0, 0, 427)
+SpinButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SpinButton.Text = "🌀 Крутилка: ВЫКЛ"
+SpinButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+SpinButton.Font = Enum.Font.SourceSansBold
+SpinButton.TextSize = 15
+SpinButton.BorderSizePixel = 0
+SpinButton.Parent = MainFrame
+Instance.new("UICorner", SpinButton)
+
+-- Кнопка Парри на Q (новая)
+local QParryButton = Instance.new("TextButton")
+QParryButton.Size = UDim2.new(0.9, 0, 0, 34)
+QParryButton.Position = UDim2.new(0.05, 0, 0, 467)
+QParryButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+QParryButton.Text = "Парри Q: ВЫКЛ"
+QParryButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+QParryButton.Font = Enum.Font.SourceSansBold
+QParryButton.TextSize = 15
+QParryButton.BorderSizePixel = 0
+QParryButton.Parent = MainFrame
+Instance.new("UICorner", QParryButton)
+
+-- Подпись снизу
+local FooterLabel = Instance.new("TextLabel")
+FooterLabel.Size = UDim2.new(0.9, 0, 0, 18)
+FooterLabel.Position = UDim2.new(0.05, 0, 0, 510)
+FooterLabel.Text = "Нажми на бинд → потом клавишу для смены"
+FooterLabel.TextColor3 = Color3.fromRGB(70, 70, 70)
+FooterLabel.Font = Enum.Font.SourceSans
+FooterLabel.TextSize = 11
+FooterLabel.BackgroundTransparency = 1
+FooterLabel.Parent = MainFrame
+
+-- =============================================
+-- ФУНКЦИИ ОБНОВЛЕНИЯ GUI
+-- =============================================
+local function UpdateBindButtons()
+	-- Toggle bind
+	if CurrentBinding == "toggle" then
+		ToggleBindButton.Text = ">>> НАЖМИ КЛАВИШУ ДЛЯ ВКЛ/ВЫКЛ <<<"
+		ToggleBindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 120)
+	else
+		ToggleBindButton.Text = "ВКЛ/ВЫКЛ парри: [" .. ToggleKey.Name .. "]"
+		ToggleBindButton.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+	end
+	-- Reset bind
+	if CurrentBinding == "reset" then
+		ResetBindButton.Text = ">>> НАЖМИ КЛАВИШУ ДЛЯ СБРОСА <<<"
+		ResetBindButton.BackgroundColor3 = Color3.fromRGB(120, 60, 60)
+	else
+		ResetBindButton.Text = "Сброс ЛКМ: [" .. ResetKey.Name .. "]"
+		ResetBindButton.BackgroundColor3 = Color3.fromRGB(50, 30, 30)
+	end
+	-- ESP bind
+	if CurrentBinding == "esp" then
+		ESPBindButton.Text = ">>> НАЖМИ КЛАВИШУ ДЛЯ ESP <<<"
+		ESPBindButton.BackgroundColor3 = Color3.fromRGB(80, 80, 40)
+	else
+		ESPBindButton.Text = "Ability ESP: [" .. ESPKey.Name .. "]"
+		ESPBindButton.BackgroundColor3 = Color3.fromRGB(40, 40, 20)
+	end
+	-- Spin bind
+	if CurrentBinding == "spin" then
+		SpinBindButton.Text = ">>> НАЖМИ КЛАВИШУ ДЛЯ КРУТИЛКИ <<<"
+		SpinBindButton.BackgroundColor3 = Color3.fromRGB(40, 80, 100)
+	else
+		SpinBindButton.Text = "🌀 Крутилка: [" .. SpinKey.Name .. "]"
+		SpinBindButton.BackgroundColor3 = Color3.fromRGB(20, 40, 50)
+	end
+	-- Q Parry bind
+	if CurrentBinding == "qparry" then
+		QParryBindButton.Text = ">>> НАЖМИ КЛАВИШУ ДЛЯ ПАРРИ Q <<<"
+		QParryBindButton.BackgroundColor3 = Color3.fromRGB(80, 40, 100)
+	else
+		QParryBindButton.Text = "Парри Q: [" .. QParryKey.Name .. "]"
+		QParryBindButton.BackgroundColor3 = Color3.fromRGB(40, 20, 50)
+	end
+end
+
+local function UpdateAbilityESPButton()
+	if AbilityESPEnabled then
+		AbilityESPButton.Text = "Ability ESP: ВКЛ"
+		AbilityESPButton.TextColor3 = Color3.fromRGB(0, 220, 0)
+		AbilityESPButton.BackgroundColor3 = Color3.fromRGB(20, 45, 20)
+	else
+		AbilityESPButton.Text = "Ability ESP: ВЫКЛ"
+		AbilityESPButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+		AbilityESPButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	end
+end
+
+local function UpdateSpinButton()
+	if SpinEnabled then
+		SpinButton.Text = "🌀 Крутилка: ВКЛ"
+		SpinButton.TextColor3 = Color3.fromRGB(0, 220, 255)
+		SpinButton.BackgroundColor3 = Color3.fromRGB(20, 35, 50)
+	else
+		SpinButton.Text = "🌀 Крутилка: ВЫКЛ"
+		SpinButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+		SpinButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	end
+end
+
+local function UpdateQParryButton()
+	if UseQParryEnabled then
+		QParryButton.Text = "Парри Q: ВКЛ"
+		QParryButton.TextColor3 = Color3.fromRGB(200, 100, 255)
+		QParryButton.BackgroundColor3 = Color3.fromRGB(40, 20, 50)
+	else
+		QParryButton.Text = "Парри Q: ВЫКЛ"
+		QParryButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+		QParryButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	end
+end
+
+local function UpdateGUI()
+	if AutoParryEnabled then
+		ParryButton.Text = "Auto Parry: ВКЛ"
+		ParryButton.TextColor3 = Color3.fromRGB(0, 220, 0)
+		ParryButton.BackgroundColor3 = Color3.fromRGB(20, 45, 20)
+	else
+		ParryButton.Text = "Auto Parry: ВЫКЛ"
+		ParryButton.TextColor3 = Color3.fromRGB(255, 80, 80)
+		ParryButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	end
+
+	if PlayerHasParried then
+		FirstParryStatus.Text = "Первый удар: ЗАСЧИТАН ✓"
+		FirstParryStatus.TextColor3 = Color3.fromRGB(0, 220, 0)
+		HintLabel.Text = "Скрипт работает. Сброс: [" .. ResetKey.Name .. "]"
+	else
+		FirstParryStatus.Text = "Первый удар: НЕ ЗАСЧИТАН"
+		FirstParryStatus.TextColor3 = Color3.fromRGB(255, 80, 80)
+		HintLabel.Text = "Кликни ЛКМ сам один раз для старта"
+	end
+
+	if not AutoParryEnabled then
+		ScriptStatus.Text = "Статус: выключен [" .. ToggleKey.Name .. "]"
+		ScriptStatus.TextColor3 = Color3.fromRGB(150, 150, 150)
+	elseif not PlayerHasParried then
+		ScriptStatus.Text = "Статус: жди — кликни ЛКМ сам"
+		ScriptStatus.TextColor3 = Color3.fromRGB(255, 200, 0)
+	else
+		ScriptStatus.Text = "Статус: активен и работает"
+		ScriptStatus.TextColor3 = Color3.fromRGB(0, 220, 0)
+	end
+
+	UpdateBindButtons()
+	UpdateAbilityESPButton()
+	UpdateSpinButton()
+	UpdateQParryButton()
+end
+
+UpdateGUI()
+
+-- =============================================
+-- ДЕЙСТВИЯ ФУНКЦИЙ
+-- =============================================
+local function ToggleAutoParry()
+	AutoParryEnabled = not AutoParryEnabled
+	if not AutoParryEnabled then
+		Parried = false
+	end
+	UpdateGUI()
+end
+
+local function ResetFirstParry()
+	PlayerHasParried = false
+	Parried = false
+	LastTarget = nil
+	LastBallInstance = nil
+	ResetStatus.Text = "ЛКМ сброшен! Кликни заново."
+	ResetStatus.TextColor3 = Color3.fromRGB(255, 160, 0)
+	UpdateGUI()
+	task.delay(3, function()
+		ResetStatus.Text = ""
+	end)
+end
+
+local function ToggleESP()
+	AbilityESPEnabled = not AbilityESPEnabled
+	if not AbilityESPEnabled then
+		for _, p in pairs(Players:GetPlayers()) do
+			if p.Character and p.Character:FindFirstChild("Head") then
+				local tag = p.Character.Head:FindFirstChild("AbilityTag")
+				if tag then tag:Destroy() end
+			end
+		end
+	end
+	UpdateGUI()
+end
+
+local function ToggleSpin()
+	SpinEnabled = not SpinEnabled
+	UpdateGUI()
+end
+
+local function ToggleQParry()
+	UseQParryEnabled = not UseQParryEnabled
+	UpdateGUI()
+end
+
+-- =============================================
+-- КРУТИЛКА 🌀
+-- =============================================
+local function DoSpin()
+	if not SpinEnabled then return end
+	if IsSpinning then return end
+	local char = LocalPlayer.Character
+	if not char then return end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+	IsSpinning = true
+	task.spawn(function()
+		local spinSteps = 30
+		local stepAngle = 360 / spinSteps
+		local originalCFrame = hrp.CFrame
+		for i = 1, spinSteps do
+			if not char or not char.Parent then break end
+			if not hrp or not hrp.Parent then break end
+			local angle = math.rad(stepAngle * i)
+			hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, angle, 0)
+			RunService.RenderStepped:Wait()
+		end
+		if hrp and hrp.Parent then
+			hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, math.rad(360), 0) * (originalCFrame - originalCFrame.Position)
+		end
+		IsSpinning = false
+	end)
+end
+
+-- =============================================
+-- НАЖАТИЕ Q (без VIM)
+-- =============================================
+local function PressQ()
+	-- Используем стандартные функции экзекьютора (keypress / keyrelease)
+	if keypress and keyrelease then
+		keypress(0x51) -- Q
+		task.wait(0.01)
+		keyrelease(0x51)
+	elseif keypress then
+		keypress(0x51)
+	end
+end
+
+-- =============================================
+-- КЛИКИ ПО КНОПКАМ GUI
+-- =============================================
+ParryButton.MouseButton1Click:Connect(ToggleAutoParry)
+AbilityESPButton.MouseButton1Click:Connect(ToggleESP)
+SpinButton.MouseButton1Click:Connect(ToggleSpin)
+QParryButton.MouseButton1Click:Connect(ToggleQParry)
+
+ToggleBindButton.MouseButton1Click:Connect(function()
+	CurrentBinding = (CurrentBinding == "toggle") and nil or "toggle"
+	UpdateBindButtons()
+end)
+ResetBindButton.MouseButton1Click:Connect(function()
+	CurrentBinding = (CurrentBinding == "reset") and nil or "reset"
+	UpdateBindButtons()
+end)
+ESPBindButton.MouseButton1Click:Connect(function()
+	CurrentBinding = (CurrentBinding == "esp") and nil or "esp"
+	UpdateBindButtons()
+end)
+SpinBindButton.MouseButton1Click:Connect(function()
+	CurrentBinding = (CurrentBinding == "spin") and nil or "spin"
+	UpdateBindButtons()
+end)
+QParryBindButton.MouseButton1Click:Connect(function()
+	CurrentBinding = (CurrentBinding == "qparry") and nil or "qparry"
+	UpdateBindButtons()
+end)
+
+-- =============================================
+-- ABILITY ESP ЛОГИКА
+-- =============================================
+local function FetchAbility(p)
+	local a = p:GetAttribute("Ability") or p:GetAttribute("EquippedAbility") or p:GetAttribute("SelectedAbility")
+	if not a then
+		local l = p:FindFirstChild("leaderstats")
+		if l and l:FindFirstChild("Ability") then
+			a = l.Ability.Value
+		end
+	end
+	return (a and tostring(a) ~= "") and tostring(a) or "???"
+end
+
+task.spawn(function()
+	while true do
+		if AbilityESPEnabled then
+			for _, p in pairs(Players:GetPlayers()) do
+				if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+					local head = p.Character.Head
+					local tag = head:FindFirstChild("AbilityTag")
+					if not tag then
+						tag = Instance.new("BillboardGui")
+						tag.Name = "AbilityTag"
+						tag.Size = UDim2.new(0, 120, 0, 30)
+						tag.StudsOffset = Vector3.new(0, 3, 0)
+						tag.AlwaysOnTop = true
+						tag.Parent = head
+						local label = Instance.new("TextLabel")
+						label.Name = "AbilityLabel"
+						label.Size = UDim2.new(1, 0, 1, 0)
+						label.BackgroundTransparency = 1
+						label.Font = Enum.Font.SourceSansBold
+						label.TextSize = 20
+						label.TextStrokeTransparency = 0
+						label.TextColor3 = Color3.fromRGB(255, 255, 100)
+						label.Parent = tag
+					end
+					local label = tag:FindFirstChild("AbilityLabel")
+					if label then
+						label.Text = FetchAbility(p)
+						label.Visible = true
+					end
+				end
+			end
+		else
+			for _, p in pairs(Players:GetPlayers()) do
+				if p.Character and p.Character:FindFirstChild("Head") then
+					local tag = p.Character.Head:FindFirstChild("AbilityTag")
+					if tag then
+						local label = tag:FindFirstChild("AbilityLabel")
+						if label then label.Visible = false end
+					end
+				end
+			end
+		end
+		task.wait(1)
+	end
+end)
+
+-- =============================================
+-- ОБРАБОТКА ВВОДА (БИНДЫ + ЛКМ)
+-- =============================================
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+
+	-- Если ждём нажатия для перебинда
+	if CurrentBinding and input.UserInputType == Enum.UserInputType.Keyboard then
+		if CurrentBinding == "toggle" then
+			ToggleKey = input.KeyCode
+		elseif CurrentBinding == "reset" then
+			ResetKey = input.KeyCode
+		elseif CurrentBinding == "esp" then
+			ESPKey = input.KeyCode
+		elseif CurrentBinding == "spin" then
+			SpinKey = input.KeyCode
+		elseif CurrentBinding == "qparry" then
+			QParryKey = input.KeyCode
+		end
+		CurrentBinding = nil
+		UpdateGUI()
+		return
+	end
+
+	-- Обычные бинды
+	if input.UserInputType == Enum.UserInputType.Keyboard then
+		if input.KeyCode == ToggleKey then
+			ToggleAutoParry()
+		elseif input.KeyCode == ResetKey then
+			ResetFirstParry()
+		elseif input.KeyCode == ESPKey then
+			ToggleESP()
+		elseif input.KeyCode == SpinKey then
+			ToggleSpin()
+		elseif input.KeyCode == QParryKey then
+			ToggleQParry()
+		end
+	end
+
+	-- ЛКМ для первого удара
+	if input.UserInputType == Enum.UserInputType.MouseButton1 and not PlayerHasParried then
+		local mousePos = UserInputService:GetMouseLocation()
+		local guiObj = ScreenGui:GetGuiObjectsAtPosition(mousePos.X, mousePos.Y)
+		if #guiObj == 0 or (#guiObj == 1 and guiObj == ScreenGui) then
+			if AutoParryEnabled then
+				PlayerHasParried = true
+				Parried = false
+				LastTarget = nil
+				ResetStatus.Text = ""
+				UpdateGUI()
+			end
+		end
+	end
+end)
+
+-- =============================================
+-- РЕСПАВН
+-- =============================================
+LocalPlayer.CharacterAdded:Connect(function()
+	Parried = false
+	LastBallInstance = nil
+	LastTarget = nil
+	UpdateGUI()
+end)
+
+-- =============================================
+-- ПОЛУЧЕНИЕ МЯЧА
+-- =============================================
+local function GetBall()
+	local ws = game:GetService("Workspace")
+	for _, folderName in pairs({"Balls", "TrainingBalls"}) do
+		local folder = ws:FindFirstChild(folderName)
+		if folder then
+			local ball = folder:FindFirstChildOfClass("Part")
+			if ball then return ball end
+		end
+	end
+	return nil
+end
+
+-- =============================================
+-- ОСНОВНОЙ ЦИКЛ AUTO PARRY
+-- =============================================
+RunService.Heartbeat:Connect(function()
+	if not AutoParryEnabled then return end
+	if not PlayerHasParried then return end
+
+	local ball = GetBall()
+	if not ball then
+		Parried = false
+		LastTarget = nil
+		return
+	end
+
+	local currentTarget = ball:GetAttribute("target")
+	if ball ~= LastBallInstance or currentTarget ~= LastTarget then
+		Parried = false
+		LastBallInstance = ball
+		LastTarget = currentTarget
+	end
+
+	if Parried then return end
+	if currentTarget ~= LocalPlayer.Name then return end
+
+	local char = LocalPlayer.Character
+	if not char then return end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then return end
+
+	local dist = (hrp.Position - ball.Position).Magnitude
+	local zoomies = ball:FindFirstChild("zoomies")
+	local speed = 65
+	if zoomies then
+		speed = zoomies.VectorVelocity.Magnitude
+	end
+
+	local ping = 0
+	local ok, val = pcall(function()
+		return Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+	end)
+	if ok then ping = val end
+
+	local dynamicThreshold = Threshold + (speed * 0.18) + ((ping / 1000) * speed)
+
+	if dist <= dynamicThreshold or dist <= 18 then
+		local randomDelay = math.random(1, 8) / 1000
+		task.delay(randomDelay, function()
+			if UseQParryEnabled then
+				-- Паррим через Q
+				PressQ()
+			else
+				-- Обычный клик ЛКМ
+				if mouse1click then
+					mouse1click()
+				elseif mouse1press and mouse1release then
+					mouse1press()
+					task.wait(0.01)
+					mouse1release()
+				end
+			end
+
+			-- 🌀 КРУТИЛКА при каждом отбиве
+			DoSpin()
+		end)
+		Parried = true
+	end
+end)
