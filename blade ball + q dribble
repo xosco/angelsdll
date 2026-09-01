@@ -24,27 +24,33 @@ local UseQParryEnabled = false
 -- =============================================
 -- ТОНКАЯ НАСТРОЙКА ТАЙМИНГОВ (ЕСЛИ НЕ УСПЕВАЕТ)
 -- =============================================
-local ReactionBuffer = 0.105      -- Базовое опережение (в секундах). Если не успевает — увеличивать до 0.11 - 0.14
-local SpeedScale = 0.00015        -- Компенсация скорости мяча. Чем быстрее мяч, тем раньше жмёт.
+local ReactionBuffer = 0.105      -- Базовое опережение (в секундах)
+local SpeedScale = 0.00015        -- Компенсация скорости мяча
 local MinTriggerTime = 0.06       -- Минимальный порог срабатывания (секунды)
-local EmergencyDistance = 20      -- Аварийный радиус (в studs). Спасает при резких закрутах вблизи.
+local EmergencyDistance = 10      -- Аварийный радиус (в studs)
 
 local CurrentBinding = nil
+
+-- Переменные для перетаскивания слайдеров (объявлены заранее для правильной области видимости)
+local RBDragging = false
+local EDDragging = false
 
 -- --- GUI ---
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AutoParryGUI"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true -- Убирает смещение мыши на слайдерах
 ScreenGui.Parent = game.CoreGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 280, 0, 560)
-MainFrame.Position = UDim2.new(0.05, 0, 0.15, 0)
+MainFrame.Size = UDim2.new(0, 280, 0, 680)
+MainFrame.Position = UDim2.new(0.05, 0, 0.05, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
+MainFrame.ClipsDescendants = true
 Instance.new("UICorner", MainFrame)
 
 local TitleBar = Instance.new("Frame")
@@ -235,9 +241,162 @@ QParryButton.BorderSizePixel = 0
 QParryButton.Parent = MainFrame
 Instance.new("UICorner", QParryButton)
 
+-- =============================================
+-- НАСТРОЙКИ ТАЙМИНГОВ GUI
+-- =============================================
+local TimingHeader = Instance.new("TextLabel")
+TimingHeader.Size = UDim2.new(0.9, 0, 0, 20)
+TimingHeader.Position = UDim2.new(0.05, 0, 0, 510)
+TimingHeader.Text = "── ТАЙМИНГИ ──"
+TimingHeader.TextColor3 = Color3.fromRGB(100, 100, 100)
+TimingHeader.Font = Enum.Font.SourceSansBold
+TimingHeader.TextSize = 12
+TimingHeader.BackgroundTransparency = 1
+TimingHeader.Parent = MainFrame
+
+-- === REACTION BUFFER SLIDER ===
+local RBLabel = Instance.new("TextLabel")
+RBLabel.Size = UDim2.new(0.9, 0, 0, 16)
+RBLabel.Position = UDim2.new(0.05, 0, 0, 534)
+RBLabel.Text = "ReactionBuffer: " .. string.format("%.3f", ReactionBuffer)
+RBLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
+RBLabel.Font = Enum.Font.SourceSansBold
+RBLabel.TextSize = 12
+RBLabel.BackgroundTransparency = 1
+RBLabel.TextXAlignment = Enum.TextXAlignment.Left
+RBLabel.Parent = MainFrame
+
+local RBSliderBG = Instance.new("Frame")
+RBSliderBG.Size = UDim2.new(0.9, 0, 0, 16)
+RBSliderBG.Position = UDim2.new(0.05, 0, 0, 552)
+RBSliderBG.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+RBSliderBG.BorderSizePixel = 0
+RBSliderBG.Parent = MainFrame
+Instance.new("UICorner", RBSliderBG)
+
+local RBSliderFill = Instance.new("Frame")
+RBSliderFill.Size = UDim2.new(0, 0, 1, 0)
+RBSliderFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+RBSliderFill.BorderSizePixel = 0
+RBSliderFill.Parent = RBSliderBG
+Instance.new("UICorner", RBSliderFill)
+
+local RBSliderButton = Instance.new("TextButton")
+RBSliderButton.Size = UDim2.new(1, 0, 1, 0)
+RBSliderButton.BackgroundTransparency = 1
+RBSliderButton.Text = ""
+RBSliderButton.Parent = RBSliderBG
+
+local RBMinusBtn = Instance.new("TextButton")
+RBMinusBtn.Size = UDim2.new(0, 30, 0, 18)
+RBMinusBtn.Position = UDim2.new(0.05, 0, 0, 572)
+RBMinusBtn.BackgroundColor3 = Color3.fromRGB(60, 30, 30)
+RBMinusBtn.Text = "−"
+RBMinusBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+RBMinusBtn.Font = Enum.Font.SourceSansBold
+RBMinusBtn.TextSize = 16
+RBMinusBtn.BorderSizePixel = 0
+RBMinusBtn.Parent = MainFrame
+Instance.new("UICorner", RBMinusBtn)
+
+local RBPlusBtn = Instance.new("TextButton")
+RBPlusBtn.Size = UDim2.new(0, 30, 0, 18)
+RBPlusBtn.Position = UDim2.new(0.05, 34, 0, 572)
+RBPlusBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
+RBPlusBtn.Text = "+"
+RBPlusBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+RBPlusBtn.Font = Enum.Font.SourceSansBold
+RBPlusBtn.TextSize = 16
+RBPlusBtn.BorderSizePixel = 0
+RBPlusBtn.Parent = MainFrame
+Instance.new("UICorner", RBPlusBtn)
+
+local RBInputBox = Instance.new("TextBox")
+RBInputBox.Size = UDim2.new(0, 70, 0, 18)
+RBInputBox.Position = UDim2.new(0.05, 70, 0, 572)
+RBInputBox.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+RBInputBox.Text = string.format("%.3f", ReactionBuffer)
+RBInputBox.TextColor3 = Color3.fromRGB(0, 200, 255)
+RBInputBox.Font = Enum.Font.SourceSansBold
+RBInputBox.TextSize = 12
+RBInputBox.BorderSizePixel = 0
+RBInputBox.ClearTextOnFocus = false
+RBInputBox.Parent = MainFrame
+Instance.new("UICorner", RBInputBox)
+
+-- === EMERGENCY DISTANCE SLIDER ===
+local EDLabel = Instance.new("TextLabel")
+EDLabel.Size = UDim2.new(0.9, 0, 0, 16)
+EDLabel.Position = UDim2.new(0.05, 0, 0, 598)
+EDLabel.Text = "EmergencyDist: " .. string.format("%.1f", EmergencyDistance)
+EDLabel.TextColor3 = Color3.fromRGB(255, 180, 0)
+EDLabel.Font = Enum.Font.SourceSansBold
+EDLabel.TextSize = 12
+EDLabel.BackgroundTransparency = 1
+EDLabel.TextXAlignment = Enum.TextXAlignment.Left
+EDLabel.Parent = MainFrame
+
+local EDSliderBG = Instance.new("Frame")
+EDSliderBG.Size = UDim2.new(0.9, 0, 0, 16)
+EDSliderBG.Position = UDim2.new(0.05, 0, 0, 616)
+EDSliderBG.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+EDSliderBG.BorderSizePixel = 0
+EDSliderBG.Parent = MainFrame
+Instance.new("UICorner", EDSliderBG)
+
+local EDSliderFill = Instance.new("Frame")
+EDSliderFill.Size = UDim2.new(0, 0, 1, 0)
+EDSliderFill.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+EDSliderFill.BorderSizePixel = 0
+EDSliderFill.Parent = EDSliderBG
+Instance.new("UICorner", EDSliderFill)
+
+local EDSliderButton = Instance.new("TextButton")
+EDSliderButton.Size = UDim2.new(1, 0, 1, 0)
+EDSliderButton.BackgroundTransparency = 1
+EDSliderButton.Text = ""
+EDSliderButton.Parent = EDSliderBG
+
+local EDMinusBtn = Instance.new("TextButton")
+EDMinusBtn.Size = UDim2.new(0, 30, 0, 18)
+EDMinusBtn.Position = UDim2.new(0.05, 0, 0, 636)
+EDMinusBtn.BackgroundColor3 = Color3.fromRGB(60, 30, 30)
+EDMinusBtn.Text = "−"
+EDMinusBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+EDMinusBtn.Font = Enum.Font.SourceSansBold
+EDMinusBtn.TextSize = 16
+EDMinusBtn.BorderSizePixel = 0
+EDMinusBtn.Parent = MainFrame
+Instance.new("UICorner", EDMinusBtn)
+
+local EDPlusBtn = Instance.new("TextButton")
+EDPlusBtn.Size = UDim2.new(0, 30, 0, 18)
+EDPlusBtn.Position = UDim2.new(0.05, 34, 0, 636)
+EDPlusBtn.BackgroundColor3 = Color3.fromRGB(30, 60, 30)
+EDPlusBtn.Text = "+"
+EDPlusBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+EDPlusBtn.Font = Enum.Font.SourceSansBold
+EDPlusBtn.TextSize = 16
+EDPlusBtn.BorderSizePixel = 0
+EDPlusBtn.Parent = MainFrame
+Instance.new("UICorner", EDPlusBtn)
+
+local EDInputBox = Instance.new("TextBox")
+EDInputBox.Size = UDim2.new(0, 70, 0, 18)
+EDInputBox.Position = UDim2.new(0.05, 70, 0, 636)
+EDInputBox.BackgroundColor3 = Color3.fromRGB(40, 30, 15)
+EDInputBox.Text = string.format("%.1f", EmergencyDistance)
+EDInputBox.TextColor3 = Color3.fromRGB(255, 180, 0)
+EDInputBox.Font = Enum.Font.SourceSansBold
+EDInputBox.TextSize = 12
+EDInputBox.BorderSizePixel = 0
+EDInputBox.ClearTextOnFocus = false
+EDInputBox.Parent = MainFrame
+Instance.new("UICorner", EDInputBox)
+
 local FooterLabel = Instance.new("TextLabel")
 FooterLabel.Size = UDim2.new(0.9, 0, 0, 18)
-FooterLabel.Position = UDim2.new(0.05, 0, 0, 510)
+FooterLabel.Position = UDim2.new(0.05, 0, 0, 658)
 FooterLabel.Text = "Нажми на бинд → потом клавишу для смены"
 FooterLabel.TextColor3 = Color3.fromRGB(70, 70, 70)
 FooterLabel.Font = Enum.Font.SourceSans
@@ -248,7 +407,7 @@ FooterLabel.Parent = MainFrame
 -- Дебаг панель
 local DebugLabel = Instance.new("TextLabel")
 DebugLabel.Size = UDim2.new(0.9, 0, 0, 18)
-DebugLabel.Position = UDim2.new(0.05, 0, 0, 530)
+DebugLabel.Position = UDim2.new(0.05, 0, 1, -20)
 DebugLabel.Text = ""
 DebugLabel.TextColor3 = Color3.fromRGB(0, 200, 255)
 DebugLabel.Font = Enum.Font.SourceSans
@@ -256,6 +415,117 @@ DebugLabel.TextSize = 11
 DebugLabel.BackgroundTransparency = 1
 DebugLabel.TextXAlignment = Enum.TextXAlignment.Left
 DebugLabel.Parent = MainFrame
+
+-- =============================================
+-- СЛАЙДЕРЫ (ЛОГИКА И ФИКС ПРИЛИПАНИЯ К КУРСОРУ)
+-- =============================================
+
+-- ReactionBuffer: min=0.01, max=0.5, step=0.005
+local RB_MIN, RB_MAX, RB_STEP = 0.01, 0.5, 0.005
+-- EmergencyDistance: min=1, max=100, step=1
+local ED_MIN, ED_MAX, ED_STEP = 1, 100, 1
+
+local function UpdateRBDisplay()
+	RBLabel.Text = "ReactionBuffer: " .. string.format("%.3f", ReactionBuffer)
+	RBInputBox.Text = string.format("%.3f", ReactionBuffer)
+	local frac = math.clamp((ReactionBuffer - RB_MIN) / (RB_MAX - RB_MIN), 0, 1)
+	RBSliderFill.Size = UDim2.new(frac, 0, 1, 0)
+end
+
+local function UpdateEDDisplay()
+	EDLabel.Text = "EmergencyDist: " .. string.format("%.1f", EmergencyDistance)
+	EDInputBox.Text = string.format("%.1f", EmergencyDistance)
+	local frac = math.clamp((EmergencyDistance - ED_MIN) / (ED_MAX - ED_MIN), 0, 1)
+	EDSliderFill.Size = UDim2.new(frac, 0, 1, 0)
+end
+
+local function SetReactionBuffer(val)
+	ReactionBuffer = math.clamp(val, RB_MIN, RB_MAX)
+	ReactionBuffer = math.floor(ReactionBuffer / RB_STEP + 0.5) * RB_STEP
+	ReactionBuffer = math.clamp(ReactionBuffer, RB_MIN, RB_MAX)
+	UpdateRBDisplay()
+end
+
+local function SetEmergencyDistance(val)
+	EmergencyDistance = math.clamp(val, ED_MIN, ED_MAX)
+	EmergencyDistance = math.floor(EmergencyDistance / ED_STEP + 0.5) * ED_STEP
+	EmergencyDistance = math.clamp(EmergencyDistance, ED_MIN, ED_MAX)
+	UpdateEDDisplay()
+end
+
+-- Кнопки +/-
+RBMinusBtn.MouseButton1Click:Connect(function()
+	SetReactionBuffer(ReactionBuffer - RB_STEP)
+end)
+RBPlusBtn.MouseButton1Click:Connect(function()
+	SetReactionBuffer(ReactionBuffer + RB_STEP)
+end)
+EDMinusBtn.MouseButton1Click:Connect(function()
+	SetEmergencyDistance(EmergencyDistance - ED_STEP)
+end)
+EDPlusBtn.MouseButton1Click:Connect(function()
+	SetEmergencyDistance(EmergencyDistance + ED_STEP)
+end)
+
+-- Ввод вручную
+RBInputBox.FocusLost:Connect(function(enterPressed)
+	local num = tonumber(RBInputBox.Text)
+	if num then
+		SetReactionBuffer(num)
+	else
+		UpdateRBDisplay()
+	end
+end)
+
+EDInputBox.FocusLost:Connect(function(enterPressed)
+	local num = tonumber(EDInputBox.Text)
+	if num then
+		SetEmergencyDistance(num)
+	else
+		UpdateEDDisplay()
+	end
+end)
+
+-- Начало перетаскивания (Mouse Down)
+RBSliderButton.MouseButton1Down:Connect(function()
+	RBDragging = true
+end)
+
+EDSliderButton.MouseButton1Down:Connect(function()
+	EDDragging = true
+end)
+
+-- Остановка перетаскивания глобально по всей игре (Mouse Up)
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		RBDragging = false
+		EDDragging = false
+	end
+end)
+
+-- Обновление позиции ползунка во время зажатия
+RunService.RenderStepped:Connect(function()
+	if RBDragging then
+		local mousePos = UserInputService:GetMouseLocation()
+		local absPos = RBSliderBG.AbsolutePosition
+		local absSize = RBSliderBG.AbsoluteSize
+		local frac = math.clamp((mousePos.X - absPos.X) / absSize.X, 0, 1)
+		local val = RB_MIN + frac * (RB_MAX - RB_MIN)
+		SetReactionBuffer(val)
+	end
+	if EDDragging then
+		local mousePos = UserInputService:GetMouseLocation()
+		local absPos = EDSliderBG.AbsolutePosition
+		local absSize = EDSliderBG.AbsoluteSize
+		local frac = math.clamp((mousePos.X - absPos.X) / absSize.X, 0, 1)
+		local val = ED_MIN + frac * (ED_MAX - ED_MIN)
+		SetEmergencyDistance(val)
+	end
+end)
+
+-- Инициализация дисплея слайдеров
+UpdateRBDisplay()
+UpdateEDDisplay()
 
 -- =============================================
 -- GUI UPDATE
@@ -456,7 +726,7 @@ end
 local function PressQ()
 	if keypress and keyrelease then
 		keypress(0x51)
-		task.wait(0.005) -- уменьшили задержку до минимума
+		task.wait(0.005)
 		keyrelease(0x51)
 	elseif keypress then
 		keypress(0x51)
@@ -730,7 +1000,7 @@ RunService.Heartbeat:Connect(function()
 	end)
 	if ok then ping = val / 1000 end
 
-	-- Динамический порог времени (Пинг + Фиксированный Буфер + Опережение по скорости мяча)
+	-- Динамический порог времени
 	local triggerTime = ping + ReactionBuffer + (data.ApproachSpeed * SpeedScale)
 	if triggerTime < MinTriggerTime then
 		triggerTime = MinTriggerTime
@@ -758,15 +1028,14 @@ RunService.Heartbeat:Connect(function()
 	end
 
 	if shouldParry then
-		Parried = true -- Ставим флаг мгновенно до вызова кликов
+		Parried = true
 
-		-- Мгновенно выполняем удар в текущем кадре без тасок и делеев!
 		if UseQParryEnabled then
 			PressQ()
 		else
 			PerformClick()
 		end
-		
-		DoSpin() -- Крутилка запускается асинхронно
+
+		DoSpin()
 	end
 end)
