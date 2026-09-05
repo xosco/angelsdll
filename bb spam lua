@@ -1,0 +1,40 @@
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local spam = false
+
+-- Переключение на X
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+	if input.KeyCode == Enum.KeyCode.X then
+		spam = not spam
+		print(spam and "SPAM ON" or "SPAM OFF")
+	end
+end)
+
+RunService.Heartbeat:Connect(function()
+	if not spam then return end
+
+	-- F
+	pcall(function()
+		keypress(0x46)
+		keyrelease(0x46)
+	end)
+
+	-- G
+	pcall(function()
+		keypress(0x47)
+		keyrelease(0x47)
+	end)
+
+	-- ЛКМ
+	pcall(function()
+		mouse1click()
+	end)
+end)
+
+print("Спамер загружен | X — вкл/выкл | Сразу максимальная скорость")
+
+
++ -- rise [https://discord.gg/HEhYHVJ2X6]
+loadstring(game:HttpGet("https://raw.githubusercontent.com/joshhhie/rise/refs/heads/main/loader.lua"))()
